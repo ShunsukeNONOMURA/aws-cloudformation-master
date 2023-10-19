@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Create EC2 instance'
+
+# ------------------------------------------------------------#
+# Input Parameters
+# ------------------------------------------------------------# 
+Parameters:
+  PJPrefix: # プロジェクト名
+    Type: String
+  EC2InstanceType: # インスタンスタイプ
+    Type: String
+    Default: t3.small
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+  KeyName: # 利用する暗号化キー
+    Type: String
+  VPC: # VPC
+    Type: String
+  SubnetId: # サブネット
+    Type: AWS::EC2::Subnet::Id
+  PrivateIpAddress: # プライベートIP
+    Type: String
+  AssociatePublicIpAddress: # パブリックIPを自動生成
+    Type: String
+
+Resources:
+# ------------------------------------------------------------#
+#  EC2SG
+# ------------------------------------------------------------#
+  EC2SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "${PJPrefix}-ec2-sg"
+      GroupDescription: Allow SSH and HTTP access
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        # http
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        # ssh
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags: 
+        - Key: Name
+          Value: !Sub "${PJPrefix}-ec2-sg"
+
+# ------------------------------------------------------------#
+#  EC2
+# ------------------------------------------------------------#
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref 'EC2InstanceType'
+      ImageId: ami-0a3d21ec6281df8cb
+      KeyName: !Ref KeyName
+      
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: !Ref AssociatePublicIpAddress
+          DeviceIndex: "0"
+          SubnetId: !Ref SubnetId
+          PrivateIpAddress: !Ref PrivateIpAddress
+          GroupSet:
+            - !Ref EC2SG
+      
+      Tags: 
+        - Key: Name
+          Value: !Sub "${PJPrefix}-ec2"
+
+# ------------------------------------------------------------#
+# Output Parameters
+# ------------------------------------------------------------#  
+Outputs:
+  EC2Instance:
+    Value: !Ref EC2Instance
+    Export:
+      Name: !Sub "${PJPrefix}-ec2"
