@@ -1,0 +1,98 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Create RDS instance'
+
+# ------------------------------------------------------------#
+# Input Parameters
+# ------------------------------------------------------------# 
+Parameters:
+  PJPrefix: # プロジェクト名
+    Type: String
+  RDSInstanceType: # インスタンスタイプ
+    Type: String
+    Default: db.t3.medium
+    AllowedValues:
+      - db.t3.medium
+  RDSEngine:
+    Type: String
+
+  RDSMasterUsername:
+    Type: String
+  RDSMasterUserPassword:
+    Type: String
+
+  RDSPubliclyAccessible:
+    Type: String
+  RDSPort: 
+    Type: String
+
+  VPC: # VPC
+    Type: String
+
+# ------------------------------------------------------------#
+# Resources
+# ------------------------------------------------------------#
+Resources:
+  # ------------------------------------------------------------#
+  #  DBSG
+  # ------------------------------------------------------------#
+  DBSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "${PJPrefix}-db-sg"
+      GroupDescription: Allow rdb access
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        # postgresql
+        - IpProtocol: tcp
+          FromPort: !Ref RDSPort
+          ToPort: !Ref RDSPort
+          CidrIp: 0.0.0.0/0
+      Tags: 
+        - Key: Name
+          Value: !Sub "${PJPrefix}-db-sg"
+  # ------------------------------------------------------------#
+  #  DBSubnet
+  # ------------------------------------------------------------#
+  DBSubnetGroup: 
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties: 
+      DBSubnetGroupName: !Sub "${PJPrefix}-rds-subnet"
+      DBSubnetGroupDescription: "-"
+      SubnetIds: 
+        - { "Fn::ImportValue": !Sub "${PJPrefix}-public-subnet-a" }
+        - { "Fn::ImportValue": !Sub "${PJPrefix}-public-subnet-c" }
+  # ------------------------------------------------------------#
+  #  DBCluster
+  # ------------------------------------------------------------#
+  DBCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      Engine: !Ref RDSEngine
+      MasterUsername: !Ref RDSMasterUsername
+      MasterUserPassword: !Ref RDSMasterUserPassword
+      Port: !Ref RDSPort
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VpcSecurityGroupIds:
+      - !Ref DBSG
+  # ------------------------------------------------------------#
+  #  DBInstance
+  # ------------------------------------------------------------#
+  DBInstance1:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBClusterIdentifier: !Ref DBCluster
+      Engine: !Ref RDSEngine
+      DBInstanceClass: !Ref RDSInstanceType
+      PubliclyAccessible: !Ref RDSPubliclyAccessible
+
+  DBInstance2:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBClusterIdentifier: !Ref DBCluster
+      Engine: !Ref RDSEngine
+      DBInstanceClass: !Ref RDSInstanceType
+      PubliclyAccessible: !Ref RDSPubliclyAccessible
+
+# ------------------------------------------------------------#
+# Output Parameters
+# ------------------------------------------------------------#  
