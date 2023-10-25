@@ -25,6 +25,14 @@ Parameters:
   RDSPort: 
     Type: String
 
+  RDSStorageEncrypted: # DB暗号化
+    Type: String
+    Default: true
+  
+  RDSKmsKey: # KMS（指定しない場合デフォルトのものが適用）
+    Type: String
+    Default: ''
+
   VPC: # VPC
     Type: String
 
@@ -70,6 +78,10 @@ Resources:
       Engine: !Ref RDSEngine
       MasterUsername: !Ref RDSMasterUsername
       MasterUserPassword: !Ref RDSMasterUserPassword
+      # MasterUserSecret:
+      #   KmsKeyId: !GetAtt [作成したKMSKeyの論理ID].KeyId
+      # KmsKeyId: !Ref RDSKmsKey
+      StorageEncrypted: !Ref RDSStorageEncrypted
       Port: !Ref RDSPort
       DBSubnetGroupName: !Ref DBSubnetGroup
       VpcSecurityGroupIds:
@@ -84,6 +96,7 @@ Resources:
       Engine: !Ref RDSEngine
       DBInstanceClass: !Ref RDSInstanceType
       PubliclyAccessible: !Ref RDSPubliclyAccessible
+      # StorageEncrypted: !Ref RDSStorageEncrypted
 
   DBInstance2:
     Type: AWS::RDS::DBInstance
@@ -92,6 +105,7 @@ Resources:
       Engine: !Ref RDSEngine
       DBInstanceClass: !Ref RDSInstanceType
       PubliclyAccessible: !Ref RDSPubliclyAccessible
+      # StorageEncrypted: !Ref RDSStorageEncrypted
 
 # ------------------------------------------------------------#
 # Output Parameters
